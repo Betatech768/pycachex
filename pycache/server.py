@@ -1,17 +1,36 @@
 import socket
+import threading
+
+
+def handle_client(conn, addr):
+    print(f"[NEW CONNECTION] {addr} connected")
+    with conn:
+        while True:
+            try:
+                data = conn.recv(1024)
+                if not data:
+                    break
+            except ConnectionResetError:
+                break
+    print(f"[DISCONNECTED {addr} left.")
+
+
 
 def create_server():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('127.0.0.1', 12345))
-        s.listen()
-        print(f"Server is Listening...")
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    with server as server:
+        server.bind(("127.0.0.1", 12345))
+        server.listen()
+        print(f"Server Listening... ")
 
-        conn, addr = s.accept()
-
-        with conn:
-            print(f"Server Started on Port 12345")
-
+        try:
             while True:
-                data = conn.recv(1024)
-                if not data: break
-                conn.send(data)
+                conn, addr = server.accept()
+                thread = threading.Thread(target=handle_client, args=(conn, addr))
+                thread.start()
+        except ConnectionResetError as e:
+            print(f" Error occurred {e}")
+
+
+if __name__ == "__main__":
+    create_server()
